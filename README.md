@@ -24,7 +24,6 @@ Roles
 ------
 Role | Description | CI Status
 --- | --- | ---
-
 [diademiemi.foreman.install](./roles/install/) | Set up dependencies and run Foreman installer | N/A
 [diademiemi.foreman.smart_proxy](./roles/smart_proxy/) | Set up Smart Proxy (Capsule server) | N/A
 [diademiemi.foreman.configure_katello](./roles/configure_katello/) | Configure Katello resources | N/A
