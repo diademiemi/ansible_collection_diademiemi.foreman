@@ -1,0 +1,67 @@
+---
+## GLOBAL, for registering the DNS server
+foreman_smart_proxy_admin_username: "{{ foreman_username | default('admin') }}"
+foreman_smart_proxy_admin_password: "{{ foreman_password | default('admin') }}"
+foreman_smart_proxy_server_url: "{{ foreman_url | default('https://{{ ansible_fqdn }}') }}"
+foreman_smart_proxy_server_validate_certs: "{{ foreman_validate_certs | default(false) }}"
+
+foreman_smart_proxy_domain_name: "{{ foreman_domain | default(ansible_domain) }}"
+
+foreman_smart_proxy_network_id: "{{ ansible_default_ipv4.network }}"
+foreman_smart_proxy_network_cidr: "{{ ansible_default_ipv4.network }}/{{ ansible_default_ipv4.prefix }}"
+## DNS
+# Whether to enable DNS management
+foreman_smart_proxy_dns: true
+foreman_smart_proxy_dns_install_bind: "{{ foreman_smart_proxy_dns }}"
+foreman_smart_proxy_dns_managed: true
+foreman_smart_proxy_dns_provider: nsupdate
+foreman_smart_proxy_dns_key: "{{ _foreman_smart_proxy_dns_key }}"  # vars/debian.yml, vars/redhat.yml
+foreman_smart_proxy_dns_server: "192.168.21.51"
+foreman_smart_proxy_dns_interface: "{{ ansible_default_ipv4.interface }}"
+# Private subnet reversed, with in-addr.arpa appended
+foreman_smart_proxy_dns_zone: "{{ foreman_smart_proxy_domain_name }}"
+foreman_smart_proxy_dns_reverse: "{{ foreman_smart_proxy_network_id.split('.')[2] }}\
+  .{{ foreman_smart_proxy_network_id.split('.')[1] }}\
+  .{{ foreman_smart_proxy_network_id.split('.')[0] }}\
+  .in-addr.arpa"
+
+## DHCP
+foreman_smart_proxy_dhcp: true
+foreman_smart_proxy_dns_auto_link_domain: true
+foreman_smart_proxy_dhcp_install_isc: "{{ foreman_smart_proxy_dhcp_provider == 'isc' and foreman_smart_proxy_dhcp }}"
+foreman_smart_proxy_dhcp_managed: true
+# This will be the subnet that the DHCP server will serve
+# The default is the subnet of the ansible_default_ipv4
+foreman_smart_proxy_dhcp_network: "{{ foreman_smart_proxy_network_id }}"
+# Comma seperated list of nameservers. Defaults to the ansible_default_ipv4 DNS or the smart proxy itself when DNS is also enabled
+foreman_smart_proxy_dhcp_nameservers: "{% if foreman_smart_proxy_dns %}{{ ansible_default_ipv4.address }}{% else %}\
+  {{ ansible.default_ipv4.dns.nameservers | join(',') }}{% endif %}"
+# Space seperated list of IP ranges. Standard is 100-200 of the subnet
+foreman_smart_proxy_dhcp_range: "{{ foreman_smart_proxy_network_cidr | ansible.utils.ipaddr(100) | ansible.utils.ipaddr('address') }} \
+  {{ foreman_smart_proxy_network_cidr | ansible.utils.ipaddr(200) | ansible.utils.ipaddr('address') }}"
+foreman_smart_proxy_dhcp_gateway: "{{ ansible_default_ipv4.gateway }}"
+foreman_smart_proxy_dhcp_interface: "{{ ansible_default_ipv4.interface }}"
+foreman_smart_proxy_dhcp_provider: isc
+foreman_smart_proxy_dhcp_server: "192.168.21.51"
+foreman_smart_proxy_dhcp_omapi_port: 7911
+foreman_smart_proxy_dhcp_ping_free_ip: true
+
+
+## TFTP
+# Whether to enable TFTP, usually for network booting
+foreman_smart_proxy_tftp: true
+foreman_smart_proxy_tftp_managed: "{{ foreman_smart_proxy_tftp }}"
+foreman_smart_proxy_tftp_install_tftp: "{{ foreman_smart_proxy_tftp }}"
+foreman_smart_proxy_tftp_listen_on: https
+foreman_smart_proxy_tftp_servername: "{{ ansible_default_ipv4.address }}"
+foreman_smart_proxy_tftp_root: "{{ _foreman_smart_proxy_tftp_root }}"  # vars/debian.yml, vars/redhat.yml
+foreman_smart_proxy_tftp_force_download_discovery: "{{ foreman_smart_proxy_tftp }}"
+foreman_smart_proxy_tftp_discovery_image_url: "https://downloads.theforeman.org/discovery/releases/latest/fdi-image-latest.tar"
+## OTHER
+# Other installation options
+foreman_smart_proxy_extra_opts:
+  - '--enable-foreman-plugin-discovery'
+  - '--foreman-proxy-plugin-discovery-install-images=true'
+  - '--foreman-proxy-plugin-discovery-tftp-root={{ _foreman_smart_proxy_tftp_root }}'
+
+...

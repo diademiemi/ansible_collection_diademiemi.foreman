@@ -1,0 +1,14 @@
+---
+- name: "Setup foreman standalone, katello: {{ foreman_install_enable_katello }}"
+  become: true
+  ansible.builtin.command: |
+    foreman-installer --foreman-initial-location '{{ foreman_install_installer_initial_location }}' \
+    --foreman-initial-organization '{{ foreman_install_installer_initial_organization }}' \
+    --foreman-initial-admin-username '{{ foreman_install_installer_initial_admin_username }}' \
+    --foreman-initial-admin-password '{{ foreman_install_installer_initial_admin_password }}' \
+    {% if foreman_install_enable_katello %} --scenario katello {% endif %}
+  args:
+    creates: /etc/foreman
+  when: not foreman_install_skip_installer
+
+...

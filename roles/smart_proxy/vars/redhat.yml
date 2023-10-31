@@ -1,0 +1,5 @@
+---
+_foreman_smart_proxy_dns_key: /etc/rndc.key
+_foreman_smart_proxy_tftp_root: /var/lib/tftpboot
+
+...

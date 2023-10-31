@@ -1,0 +1,7 @@
+---
+- name: Install rsync
+  become: true
+  ansible.builtin.package:
+    name: rsync
+    state: present
+...

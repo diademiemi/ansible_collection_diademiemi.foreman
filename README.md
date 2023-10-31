@@ -1,6 +1,21 @@
-Ansible Collection - diademiemi.template
+Ansible Collection - diademiemi.foreman
 ========================================
-Documentation for the collection template.
+Documentation for the collection foreman.
+
+This collection is NOT meant as a replacement for the upstream Foreman/Satellite Ansible collection. This is meant as a simple way to deploy a test environment for Foreman/Katello.
+
+This collection will deploy a Foreman/Katello server and configure it for PXE booting clients. The default variabes will use the network the server is connected to as the PXE network. The default username and password for the Foreman/Katello server and PXE clients is `admin` and `admin` by default. Check the variables for every role for more information.
+
+The default variables will produce a VERY insecure environment, if you want to use this, please change the variables to something more secure. This was made so I could practice for the EX403 exam.
+
+This collection is tested on the following operating systems:
+- CentOS Stream 8
+
+But should work on:
+- Ubuntu 20.04
+- Debian 11
+
+The Katello parts are only supported on CentOS Stream 8. Be aware that some defaults might assume CentOS Stream 8. (For example, the default hostgroups refer to content views)
 
 Contents 
 ========
@@ -9,40 +24,12 @@ Roles
 ------
 Role | Description | CI Status
 --- | --- | ---
-<!-- [diademiemi.template.EXAMPLE](./roles/template/) | Install EXAMPLE | [![Molecule test](https://github.com/diademiemi/ansible_collection_diademiemi.template/actions/workflows/ansible-role-EXAMPLE.yml/badge.svg)](https://github.com/diademiemi/ansible_collection_diademiemi.template/actions/workflows/ansible-role-EXAMPLE.yml) -->
+
+[diademiemi.foreman.install](./roles/install/) | Set up dependencies and run Foreman installer | N/A
+[diademiemi.foreman.smart_proxy](./roles/smart_proxy/) | Set up Smart Proxy (Capsule server) | N/A
+[diademiemi.foreman.configure_katello](./roles/configure_katello/) | Configure Katello resources | N/A
+[diademiemi.foreman.configure](./roles/configure/) | Configure Foreman resources| N/A
+[diademiemi.foreman.install_capsule](./roles/install_capsule/) | Install Capsule server (NOT FINISHED) | N/A
 
 Click on the role to see the README for that role.  
 
-Collection Structure
---------------
-
-This collection makes use of my [Ansible Role Template repository](https://github.com/diademiemi/ansible_role_%74emplate.git).  The `add-role.sh` script downloads this Template and generates a new role with the name specified. If a `molecule/default/molecule.yml` file is present, it will be ran with GitHub Actions.  
-<!-- I use %74 here to encode to a "t" so it doesnt get recursively replaced. The .git causes a redirect so you end up at the right URL :)-->
-
-Usage:
-```bash
-export NEW_ROLE_NAME="new_role"
-./add-role.sh ${NEW_ROLE_NAME}
-```
-
-Using Template
---------------
-To use this template for a new role, run
-
-
-```bash
-export NEW_ROLE_NAME="NEW_NAME"
-export GITHUB_USER="diademiemi"
-export GALAXY_API_KEY="YOUR_API_KEY"
-
-find . -type f -exec sed -i "s/diademiemi/${GITHUB_USER}/g" {} + # Do not run this more than once
-find . -type f -exec sed -i "s/template/${NEW_ROLE_NAME}/g" {} + # Do not run this more than once
-
-# Assumes repo is named ansible_role_${NEW_ROLE_NAME}
-gh secret set GALAXY_API_KEY -R ${GITHUB_USER}/ansible_collection_${GITHUB_USER}.${NEW_COLLECTION_NAME} -a actions -b ${GALAXY_API_KEY}
-
-# Remove this section from README.md
-sed -i "/Using Template/Q" README.md
-```
-
-This is also provided as a script as `replace.sh`.  

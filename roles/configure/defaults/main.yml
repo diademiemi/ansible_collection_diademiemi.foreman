@@ -1,0 +1,257 @@
+---
+foreman_configure_admin_username: "{{ foreman_username | default('admin') }}"
+foreman_configure_admin_password: "{{ foreman_password | default('admin') }}"
+foreman_configure_server_url: "{{ foreman_url | default('https://{{ ansible_fqdn }}') }}"
+foreman_configure_server_validate_certs: "{{ foreman_validate_certs | default(false) }}"
+# These variables can be set collection-wide with "foreman_" prefix
+
+foreman_configure_server_default_domain: "{{ foreman_domain | default(ansible_domain) }}"
+
+# This can be defined with "foreman_organization" variable, or just defining this entire list
+foreman_configure_server_default_organizations:
+  ["{{ foreman_organization | default('Default Organization') }}"]
+# This can be defined with "foreman_location" variable, or just defining this entire list
+foreman_configure_server_default_locations:
+  ["{{ foreman_location | default('Default Location') }}"]
+
+# One network is created by default, override this to change this behavior
+# The defaults are compatible with the defaults of the smart_proxy role
+foreman_configure_domains:
+  - name: "{{ foreman_configure_server_default_domain }}"
+    state: present
+    dns_proxy: "{% if foreman_smart_proxy_dns | default(true) %}{{ ansible_fqdn }}{% else %}{{ omit }}{% endif %}"
+    organizations: "{{ foreman_configure_server_default_organizations }}"
+    locations: "{{ foreman_configure_server_default_locations }}"
+
+# One network is created by default, override this to change this behavior
+# The defaults are compatible with the defaults of the smart_proxy role
+foreman_configure_network_cidr: "{{ ansible_default_ipv4.network }}/{{ ansible_default_ipv4.prefix }}"
+foreman_configure_subnets:
+  - name: "LAN"  # Required
+    network: "{{ ansible_default_ipv4.network }}"  # Required
+    mask: "{{ ansible_default_ipv4.netmask }}"  # Required
+    # Optional, defaults to these
+    organizations: "{{ foreman_configure_server_default_organizations }}"
+    locations: "{{ foreman_configure_server_default_locations }}"
+    gateway: "{{ ansible_default_ipv4.gateway }}"
+    dns_primary: "{{ ansible_default_ipv4.nameservers[0] | default(omit) }}"
+    dns_secondary: "{{ ansible_default_ipv4.nameservers[1] | default(omit) }}"
+    range_start: "{{ foreman_configure_network_cidr | ansible.utils.ipaddr(100) | ansible.utils.ipaddr('address') }}"
+    range_end: "{{ foreman_configure_network_cidr | ansible.utils.ipaddr(200) | ansible.utils.ipaddr('address') }}"
+    dhcp_proxy: "{% if foreman_smart_proxy_dns | default(true) %}{{ ansible_fqdn }}{% else %}{{ omit }}{% endif %}"
+    dns_proxy: "{% if foreman_smart_proxy_dns | default(true) %}{{ ansible_fqdn }}{% else %}{{ omit }}{% endif %}"
+    tftp_proxy: "{% if foreman_smart_proxy_tftp | default(true) %}{{ ansible_fqdn }}{% else %}{{ omit }}{% endif %}"
+    domains:
+      - "{{ ansible_domain }}"
+    state: present
+    # The following are disabled by default
+    # httpboot_proxy: "{{ ansible_fqdn }}"
+    # vlanid: 100
+    # boot_mode: DHCP
+
+foreman_configure_operatingsystems:
+  - name: CentOS
+    description: CentOS Stream 8
+    major: 8
+    family: Redhat
+    release_name: Stream
+    architectures:
+      - x86_64
+    media: CentOS Stream
+    partition_tables:
+      - Kickstart default
+    provisioning_templates:
+      - name: "Kickstart default PXELinux"  # Boot disk from PXE
+        kind: "PXELinux"
+      - name: "Kickstart default"  # Provisioning kickstart preconfiguration
+        kind: "provision"
+      - name: "Kickstart default finish"  # Post-install setup, e.g. root password
+        kind: "finish"
+      - name: "Kickstart default user data"  # Create users
+        kind: "user_data"
+      - name: "Global Registration"
+        kind: "registration"
+      - name: Linux host_init_config default
+        kind: host_init_config
+    password_hash: "SHA512"
+    state: present
+  - name: Ubuntu
+    major: "20.04"
+    family: Debian
+    release_name: focal
+    architectures:
+      - x86_64
+    media: Ubuntu mirror
+    partition_tables:
+      - Preseed default
+    provisioning_templates:
+      - name: "Preseed default PXELinux"  # Boot disk from PXE
+        kind: "PXELinux"
+      - name: "Preseed default"  # Provisioning debconf preconfiguration
+        kind: "provision"
+      - name: "Preseed default finish"  # Post-install setup, e.g. root password
+        kind: "finish"
+      - name: "Preseed default user data"  # Create users
+        kind: "user_data"
+      - name: "Global Registration"
+        kind: "registration"
+      - name: Linux host_init_config default
+        kind: host_init_config
+    password_hash: "SHA512"
+    state: present
+
+# I include some useful custom post templates here to configure a user and packages
+foreman_provisioning_templates:
+  - name: Preseed default finish custom post
+    kind: snippet
+    template: |
+      apt-get update
+
+      <% if !host_param('host_packages').blank? -%>
+        echo "Installing prerequisites"
+
+        apt-get install -y <%= host_param('host_packages') %>
+      <% end -%>
+
+      <% if !host_param('create_user_name').blank? -%>
+        echo "Creating user"
+
+        <% if !host_param('create_user_home').blank? -%>
+          useradd --create-home --home-dir <%= host_param('create_user_home') %> <%= host_param('create_user_name') %>
+        <% else -%>
+          useradd --create-home <%= host_param('create_user_name') %>
+        <% end -%>
+
+        <% if !host_param('create_user_password').blank? -%>
+          echo '<%= host_param('create_user_name') %>:<%= host_param('create_user_password') %>' | /usr/sbin/chpasswd
+        <% elsif !host_param('create_user_hash').blank? -%>
+          echo '<%= host_param('create_user_name') %>:<%= host_param('create_user_password') %>' | /usr/sbin/chpasswd -e
+        <% end -%>
+
+        <% if host_param_true?('create_user_sudo') -%>
+          usermod -aG sudo <%= host_param('create_user_name') %>
+        <% end -%>
+
+        <%= snippet 'remote_execution_ssh_keys' %>
+
+      <% end -%>
+    # These defaults
+    locations: "{{ foreman_configure_server_default_locations }}"
+    organizations: "{{ foreman_configure_server_default_organizations }}"
+    # Optional, defaults to these
+    # locked: false
+    operatingsystems:
+      - Ubuntu
+    state: present
+  - name: Kickstart default finish custom post
+    kind: snippet
+    template: |
+      yum makecache
+
+      <% if !host_param('host_packages').blank? -%>
+        echo "Installing prerequisites"
+
+        yum install -y <%= host_param('host_packages') %>
+      <% end -%>
+
+      <% if !host_param('create_user_name').blank? -%>
+        echo "Creating user"
+
+        <% if !host_param('create_user_home').blank? -%>
+          useradd --create-home --home-dir <%= host_param('create_user_home') %> <%= host_param('create_user_name') %>
+        <% else -%>
+          useradd --create-home <%= host_param('create_user_name') %>
+        <% end -%>
+
+        <% if !host_param('create_user_password').blank? -%>
+          echo '<%= host_param('create_user_name') %>:<%= host_param('create_user_password') %>' | /usr/sbin/chpasswd
+        <% elsif !host_param('create_user_hash').blank? -%>
+          echo '<%= host_param('create_user_name') %>:<%= host_param('create_user_password') %>' | /usr/sbin/chpasswd -e
+        <% end -%>
+
+        <% if host_param_true?('create_user_sudo') -%>
+          usermod -aG sudo <%= host_param('create_user_name') %>
+        <% end -%>
+
+        <%= snippet 'remote_execution_ssh_keys' %>
+
+      <% end -%>
+    # These defaults
+    locations: "{{ foreman_configure_server_default_locations }}"
+    organizations: "{{ foreman_configure_server_default_organizations }}"
+    # Optional, defaults to these
+    # locked: false
+    operatingsystems:
+      - CentOS Stream
+    state: present
+
+foreman_hostgroups:
+  - name: LAN
+    organization: "{{ foreman_configure_server_default_organizations[0] }}"
+    organizations: "{{ foreman_configure_server_default_organizations }}"
+    locations: "{{ foreman_configure_server_default_locations }}"
+    domain: "{{ foreman_configure_server_default_domain }}"
+    state: present
+    subnet: LAN
+  - name: PXE
+    organization: "{{ foreman_configure_server_default_organizations[0] }}"
+    organizations: "{{ foreman_configure_server_default_organizations }}"
+    locations: "{{ foreman_configure_server_default_locations }}"
+    domain: "{{ foreman_configure_server_default_domain }}"
+    parent: LAN
+    root_pass: "rootroot"
+    state: present
+    parameters:
+      - name: "skip-puppet-setup"
+        value: true
+        parameter_type: "boolean"
+      - name: "create_user_name"
+        value: "admin"
+        parameter_type: "string"
+      - name: "create_user_password"
+        value: "admin"
+        parameter_type: "string"
+      - name: "create_user_home"
+        value: "/home/admin"
+        parameter_type: "string"
+      - name: "create_user_sudo"
+        value: "true"
+        parameter_type: "boolean"
+      - name: "host_packages"
+        value: "curl"
+        parameter_type: "string"
+    subnet: LAN
+
+  - name: Ubuntu
+    organization: "{{ foreman_configure_server_default_organizations[0] }}"
+    organizations: "{{ foreman_configure_server_default_organizations }}"
+    locations: "{{ foreman_configure_server_default_locations }}"
+    domain: "{{ foreman_configure_server_default_domain }}"
+    parent: LAN/PXE
+    state: present
+    architecture: x86_64
+    pxe_loader: PXELinux BIOS
+    ptable: Preseed default
+    operatingsystem: "Ubuntu 20.04"
+    medium: "Ubuntu mirror"
+    subnet: LAN
+  - name: CentOS
+    organization: "{{ foreman_configure_server_default_organizations[0] }}"
+    organizations: "{{ foreman_configure_server_default_organizations }}"
+    locations: "{{ foreman_configure_server_default_locations }}"
+    domain: "{{ foreman_configure_server_default_domain }}"
+    parent: LAN/PXE
+    state: present
+    architecture: x86_64
+    pxe_loader: PXELinux BIOS
+    ptable: Kickstart default
+    operatingsystem: "CentOS Stream 8"
+    # medium: "CentOS Stream"
+    content_source: "{{ ansible_fqdn }}"
+    content_view: "CentOS Stream 8"
+    kickstart_repository: "CentOS Stream 8 - BaseOS"  # Only works on Katello installations
+    lifecycle_environment: "Prod"
+    subnet: LAN
+    activation_keys: "CentOS Stream 8 - Prod"
+
+...

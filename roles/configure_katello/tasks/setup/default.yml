@@ -1,0 +1,128 @@
+---
+- name: Setup Content Credential
+  theforeman.foreman.content_credential:
+    server_url: "{{ foreman_configure_katello_server_url }}"
+    username: "{{ foreman_configure_katello_admin_username }}"
+    password: "{{ foreman_configure_katello_admin_password }}"
+    validate_certs: "{{ foreman_configure_katello_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    organization: "{{ item.organization }}"
+    content_type: "{{ item.content_type }}"
+    content: "{{ item.content }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ foreman_configure_katello_content_credentials }}"
+
+- name: Setup Product
+  theforeman.foreman.product:
+    server_url: "{{ foreman_configure_katello_server_url }}"
+    username: "{{ foreman_configure_katello_admin_username }}"
+    password: "{{ foreman_configure_katello_admin_password }}"
+    validate_certs: "{{ foreman_configure_katello_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    organization: "{{ item.organization }}"
+    gpg_key: "{{ item.gpg_key | default(omit) }}"
+    label: "{{ item.label | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ foreman_configure_katello_products }}"
+
+- name: Setup Sync Plan
+  theforeman.foreman.sync_plan:
+    server_url: "{{ foreman_configure_katello_server_url }}"
+    username: "{{ foreman_configure_katello_admin_username }}"
+    password: "{{ foreman_configure_katello_admin_password }}"
+    validate_certs: "{{ foreman_configure_katello_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    organization: "{{ item.organization }}"
+    description: "{{ item.description | default(omit) }}"
+    interval: "{{ item.interval }}"
+    sync_date: "{{ item.sync_date }}"
+    products: "{{ item.products | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+    enabled: "{{ item.enabled | default(true) }}"
+  loop: "{{ foreman_configure_katello_sync_plans }}"
+
+- name: Setup Repository
+  theforeman.foreman.repository:
+    server_url: "{{ foreman_configure_katello_server_url }}"
+    username: "{{ foreman_configure_katello_admin_username }}"
+    password: "{{ foreman_configure_katello_admin_password }}"
+    validate_certs: "{{ foreman_configure_katello_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    organization: "{{ item.organization }}"
+    content_type: "{{ item.content_type }}"
+    product: "{{ item.product }}"
+    url: "{{ item.url }}"
+    gpg_key: "{{ item.gpg_key | default(omit) }}"
+    mirror_on_sync: "{{ item.mirror_on_sync | default(true) }}"
+    state: "{{ item.state | default('present') }}"
+    auto_enabled: "{{ item.auto_enabled | default(true) }}"
+  loop: "{{ foreman_configure_katello_repositories }}"
+
+- name: Setup Content View
+  theforeman.foreman.content_view:
+    server_url: "{{ foreman_configure_katello_server_url }}"
+    username: "{{ foreman_configure_katello_admin_username }}"
+    password: "{{ foreman_configure_katello_admin_password }}"
+    validate_certs: "{{ foreman_configure_katello_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    organization: "{{ item.organization }}"
+    label: "{{ item.label | default(omit) }}"
+    repositories: "{{ item.repositories | default(omit) }}"
+    auto_publish: "{{ item.auto_publish | default(false) }}"
+    state: "{{ item.state | default('present') }}"
+    composite: "{{ item.composite | default(false) }}"
+    components: "{{ item.components | default(omit) }}"
+  loop: "{{ foreman_configure_katello_content_views }}"
+
+- name: Setup lifecycle environments
+  theforeman.foreman.lifecycle_environment:
+    server_url: "{{ foreman_configure_katello_server_url }}"
+    username: "{{ foreman_configure_katello_admin_username }}"
+    password: "{{ foreman_configure_katello_admin_password }}"
+    validate_certs: "{{ foreman_configure_katello_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    label: "{{ item.label | default(omit) }}"
+    organization: "{{ item.organization }}"
+    prior: "{{ item.prior | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ foreman_configure_katello_lifecycle_environments }}"
+
+- name: Create Content View version
+  theforeman.foreman.content_view_version:
+    server_url: "{{ foreman_configure_katello_server_url }}"
+    username: "{{ foreman_configure_katello_admin_username }}"
+    password: "{{ foreman_configure_katello_admin_password }}"
+    validate_certs: "{{ foreman_configure_katello_server_validate_certs }}"
+
+    content_view: "{{ item.content_view }}"
+    organization: "{{ item.organization }}"
+    lifecycle_environments: "{{ item.lifecycle_environments }}"
+    state: "{{ item.state | default('present') }}"
+    version: "{{ item.version }}"
+  when: foreman_configure_katello_content_view_create
+  loop: "{{ foreman_configure_katello_content_view_versions }}"
+
+- name: Create Activation Keys
+  theforeman.foreman.activation_key:
+    server_url: "{{ foreman_configure_katello_server_url }}"
+    username: "{{ foreman_configure_katello_admin_username }}"
+    password: "{{ foreman_configure_katello_admin_password }}"
+    validate_certs: "{{ foreman_configure_katello_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    organization: "{{ item.organization }}"
+    content_view: "{{ item.content_view }}"
+    subscriptions: "{{ item.subscriptions | default(omit) }}"
+    lifecycle_environment: "{{ item.lifecycle_environment | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+    auto_attach: "{{ item.auto_attach | default(omit) }}"
+    host_collections: "{{ item.host_collections | default(omit) }}"
+    unlimited_hosts: "{{ item.unlimited_hosts | default(omit) }}"
+  loop: "{{ foreman_configure_katello_activation_keys }}"
+...

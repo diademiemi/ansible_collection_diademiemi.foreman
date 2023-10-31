@@ -1,0 +1,51 @@
+---
+- name: Install ca-certificates
+  become: true
+  ansible.builtin.apt:
+    name: ca-certificates
+    state: present
+
+- name: Get puppet
+  ansible.builtin.get_url:
+    url: "{{ foreman_install_puppet_release_url }}"
+    dest: /tmp
+    mode: '644'
+
+- name: Install puppet
+  become: true
+  ansible.builtin.apt:
+    deb: /tmp/"{{ foreman_install_puppet_release_url | basename }}"
+
+- name: Get foreman
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ _foreman_install_foreman_apt_key_url }}"
+    dest: "{{ _foreman_install_foreman_apt_key_dest }}"
+    mode: "0644"
+
+- name: Add foreman focal repo
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "{{ _foreman_install_foreman_apt_repo }}"
+    state: present
+    filename: foreman
+
+- name: Add foreman plugins repo
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "{{ foreman_install_foreman_apt_plugins_repo }}"
+    state: present
+    filename: foreman
+
+- name: Update and upgrade apt packages
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install foreman-installer
+  become: true
+  ansible.builtin.apt:
+    name: "{{ foreman_install_foreman_installer_packages }}"
+    state: present
+
+...

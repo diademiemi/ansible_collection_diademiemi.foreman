@@ -1,0 +1,39 @@
+---
+- name: Install ISC DHCP
+  become: true
+  ansible.builtin.apt:
+    name: isc-dhcp-server
+    state: present
+  when: foreman_smart_proxy_dhcp and foreman_smart_proxy_dhcp_install_isc
+
+- name: Install DNS
+  become: true
+  ansible.builtin.apt:
+    name: bind9
+    state: present
+  when: foreman_smart_proxy_dns and foreman_smart_proxy_dns_install_bind
+
+- name: Install TFTP
+  become: true
+  ansible.builtin.apt:
+    name: tftpd-hpa
+    state: present
+  when: foreman_smart_proxy_tftp and foreman_smart_proxy_tftp_install_tftp
+
+# - name: Start DHCP server
+#   become: true
+#   ansible.builtin.service:
+#     name: isc-dhcp-server
+#     state: started
+#     enabled: true
+#   when: foreman_smart_proxy_dhcp and foreman_smart_proxy_dhcp_install_isc
+
+# - name: Start DNS server
+#   become: true
+#   ansible.builtin.service:
+#     name: bind9
+#     state: started
+#     enabled: true
+#   when: foreman_smart_proxy_dns and foreman_smart_proxy_dns_install_bind
+
+...

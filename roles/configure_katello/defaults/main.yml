@@ -1,0 +1,113 @@
+---
+foreman_configure_katello_admin_username: "{{ foreman_username | default('admin') }}"
+foreman_configure_katello_admin_password: "{{ foreman_password | default('admin') }}"
+foreman_configure_katello_server_url: "{{ foreman_url | default('https://{{ ansible_fqdn }}') }}"
+foreman_configure_katello_server_validate_certs: "{{ foreman_validate_certs | default(false) }}"
+# These variables can be set collection-wide with "foreman_" prefix
+
+foreman_configure_katello_server_default_domain: "{{ foreman_domain | default(ansible_domain) }}"
+
+# This can be defined with "foreman_organization" variable, or just defining this entire list
+foreman_configure_katello_server_default_organizations:
+  ["{{ foreman_organization | default('Default Organization') }}"]
+# This can be defined with "foreman_location" variable, or just defining this entire list
+foreman_configure_katello_server_default_locations:
+  ["{{ foreman_location | default('Default Location') }}"]
+
+foreman_configure_katello_content_credentials:
+  - name: CentOS GPG Key
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    content_type: gpg_key
+    # https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official
+    content: "{{ lookup('ansible.builtin.url', 'https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official', wantlist=true) | join('\n') }}"
+    state: present
+
+foreman_configure_katello_products:
+  - name: CentOS Product
+    label: centos
+    gpg_key: CentOS GPG Key
+    state: present
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+
+foreman_configure_katello_sync_plans:
+  - name: CentOS Sync Plan
+    description: "Sync CentOS repos"
+    interval: daily
+    # Set the sync date to a day ago plus 5 minutes. With a daily interval this will cause the sync to run in 5 minutes.
+    sync_date: "{{ '%Y-%m-%d %H:%M:%S' | strftime(ansible_facts.date_time.epoch | int - 86400 + 300 | int) }} \
+      {{ ansible_date_time.tz }}"
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    products:
+      - CentOS Product
+    state: present
+    enabled: true
+
+foreman_configure_katello_repositories:
+  - name: CentOS Stream 8 - BaseOS
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    content_type: yum
+    product: CentOS Product
+    url: "https://mirror.ams1.nl.leaseweb.net/centos/8-stream/BaseOS/x86_64/os/"
+    state: present
+    auto_enabled: true
+  - name: CentOS Stream 8 - AppStream
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    content_type: yum
+    product: CentOS Product
+    url: "https://mirror.ams1.nl.leaseweb.net/centos/8-stream/AppStream/x86_64/os/"
+    state: present
+    auto_enabled: true
+
+foreman_configure_katello_content_views:
+  - name: CentOS Stream 8
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    label: centos
+    repositories:
+      - name: CentOS Stream 8 - BaseOS
+        product: CentOS Product
+      - name: CentOS Stream 8 - AppStream
+        product: CentOS Product
+    state: present
+
+foreman_configure_katello_lifecycle_environments:
+  - name: Dev
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    prior: Library
+    state: present
+  - name: Prod
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    prior: Dev
+    state: present
+
+
+foreman_configure_katello_content_view_create: true
+foreman_configure_katello_content_view_versions:
+  - content_view: CentOS Stream 8
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    lifecycle_environments:
+      - Dev
+      - Prod
+    state: present
+    version: 1.0
+
+foreman_configure_katello_activation_keys:
+  - name: CentOS Stream 8 - Dev
+    content_view: CentOS Stream 8
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    lifecycle_environment: Dev
+    state: present
+    auto_attach: true
+    unlimited_hosts: true
+    subscriptions:
+      - name: "CentOS Product"
+  - name: CentOS Stream 8 - Prod
+    content_view: CentOS Stream 8
+    organization: "{{ foreman_configure_katello_server_default_organizations[0] }}"
+    lifecycle_environment: Prod
+    state: present
+    auto_attach: true
+    unlimited_hosts: true
+    subscriptions:
+      - name: "CentOS Product"
+
+...

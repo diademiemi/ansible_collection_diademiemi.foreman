@@ -1,0 +1,30 @@
+---
+_foreman_install_foreman_dnf_modules:
+  '3.8':
+    - name: katello
+      stream: el8
+      state: enabled
+    - name: pulpcore
+      stream: el8
+      state: enabled
+  '3.1':
+    - name: ruby
+      stream: 2.7
+      state: enabled
+    - name: postgresql
+      stream: 12
+      state: enabled
+
+_foreman_install_puppet_release_url: "https://yum.puppet.com/puppet7-release-el-8.noarch.rpm"
+
+
+_foreman_install_rpm_release_url: "https://yum.theforeman.org/releases/{{ foreman_install_release_stream }}/el8/x86_64/foreman-release.rpm"
+_foreman_install_katello_rpm_release_url:
+  "https://yum.theforeman.org/katello/{{ foreman_install_katello_release_stream }}/katello/el8/x86_64/katello-repos-latest.rpm"
+
+_foreman_install_foreman_installer_packages:
+  - foreman-installer-katello
+
+_foreman_install_enable_katello: true
+
+...

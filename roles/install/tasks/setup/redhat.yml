@@ -1,0 +1,53 @@
+---
+- name: Install Foreman release
+  become: true
+  ansible.builtin.dnf:
+    name: "{{ foreman_install_rpm_release_url }}"
+    state: present
+    disable_gpg_check: true
+
+- name: Install Katello
+  become: true
+  ansible.builtin.dnf:
+    name: "{{ foreman_install_katello_rpm_release_url }}"
+    state: present
+    disable_gpg_check: true
+  when: foreman_install_enable_katello
+
+- name: Enable modules
+  become: true
+  ansible.builtin.copy:
+    content: |
+      [{{ item.name }}]
+      name={{ item.name }}
+      stream={{ item.stream }}
+      profiles={{ item.profiles | default('') }}
+      state={{ item.state }}
+    dest: "/etc/dnf/modules.d/{{ item.name }}.module"
+    mode: "0644"
+  loop: "{{ foreman_install_foreman_dnf_modules[foreman_install_release_stream] }}"
+
+- name: Enable powertools repo
+  become: true
+  community.general.ini_file:
+    dest: /etc/yum.repos.d/CentOS-Stream-PowerTools.repo
+    section: powertools
+    option: enabled
+    value: 1
+    no_extra_spaces: true
+    mode: "0644"
+
+- name: Install Puppet6
+  become: true
+  ansible.builtin.dnf:
+    name: "{{ _foreman_install_puppet_release_url }}"
+    state: present
+    disable_gpg_check: true
+
+- name: Install foreman-installer
+  become: true
+  ansible.builtin.dnf:
+    name: "{{ foreman_install_foreman_installer_packages }}"
+    state: present
+
+...

@@ -1,0 +1,15 @@
+---
+_foreman_install_puppet_release_url: "https://apt.puppet.com/puppet7-release-bullseye.deb"
+
+_foreman_install_foreman_apt_key_url: "https://deb.theforeman.org/foreman.asc"
+_foreman_install_foreman_apt_key_dest: "/etc/apt/trusted.gpg.d/foreman.asc"
+
+_foreman_install_foreman_apt_repo: "deb http://deb.theforeman.org/ bullseye {{ foreman_install_release_stream }}"
+_foreman_install_foreman_plugins_apt_repo: "deb http://deb.theforeman.org/ plugins {{ foreman_install_release_stream }}"
+
+_foreman_install_foreman_installer_packages:
+  - foreman-installer
+
+_foreman_install_enable_katello: false
+
+...

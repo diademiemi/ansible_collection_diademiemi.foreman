@@ -1,0 +1,151 @@
+---
+- name: Setup Domain
+  theforeman.foreman.domain:
+    server_url: "{{ foreman_configure_server_url }}"
+    username: "{{ foreman_configure_admin_username }}"
+    password: "{{ foreman_configure_admin_password }}"
+    validate_certs: "{{ foreman_configure_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    organizations: "{{ item.organizations | default(omit) }}"
+    locations: "{{ item.locations | default(omit) }}"
+    dns_proxy: "{{ item.dns | default(omit) }}"
+    parameters: "{{ item.parameters | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ foreman_configure_domains }}"
+
+- name: Setup subnet
+  theforeman.foreman.subnet:
+    server_url: "{{ foreman_configure_server_url }}"
+    username: "{{ foreman_configure_admin_username }}"
+    password: "{{ foreman_configure_admin_password }}"
+    validate_certs: "{{ foreman_configure_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    network: "{{ item.network }}"
+    mask: "{{ item.mask }}"
+    organizations: "{{ item.organizations | default(omit) }}"
+    locations: "{{ item.locations | default(omit) }}"
+    gateway: "{{ item.gateway | default(omit) }}"
+    from_ip: "{{ item.range_start | default(omit) }}"
+    to_ip: "{{ item.range_end | default(omit) }}"
+    boot_mode: "{{ item.boot_mode | default(omit) }}"
+    dns_primary: "{{ item.primary_dns | default(omit) }}"
+    dns_secondary: "{{ item.secondary_dns | default(omit) }}"
+    dhcp_proxy: "{{ item.dhcp_proxy | default(omit) }}"
+    tftp_proxy: "{{ item.tftp_proxy | default(omit) }}"
+    dns_proxy: "{{ item.dns_proxy | default(omit) }}"
+    httpboot_proxy: "{{ item.httpboot_name | default(omit) }}"
+    vlanid: "{{ item.vlanid | default(omit) }}"
+    domains: "{{ item.domains | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ foreman_configure_subnets }}"
+
+- name: Setup OS
+  theforeman.foreman.operatingsystem:
+    server_url: "{{ foreman_configure_server_url }}"
+    username: "{{ foreman_configure_admin_username }}"
+    password: "{{ foreman_configure_admin_password }}"
+    validate_certs: "{{ foreman_configure_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    description: "{{ item.description | default(omit) }}"
+    major: "{{ item.major | default(omit) }}"
+    minor: "{{ item.minor | default(omit) }}"
+    family: "{{ item.family | default(omit) }}"
+    release_name: "{{ item.release_name | default(omit) }}"
+    architectures: "{{ item.architectures | default(omit) }}"
+    media: "{{ item.media | default(omit) }}"
+    ptables: "{{ item.partition_tables | default(omit) }}"
+    # provisioning_templates: "{{ item.provisioning_templates | default([]) | map(attribute='name') | list | flatten }}"
+    parameters: "{{ item.parameters | default(omit) }}"
+    password_hash: "{{ item.password_hash | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ foreman_configure_operatingsystems }}"
+
+- name: Setup Provisioning Template
+  theforeman.foreman.provisioning_template:
+    server_url: "{{ foreman_configure_server_url }}"
+    username: "{{ foreman_configure_admin_username }}"
+    password: "{{ foreman_configure_admin_password }}"
+    validate_certs: "{{ foreman_configure_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    kind: "{{ item.kind | default(omit) }}"
+    template: "{{ item.template | default(omit) }}"
+    locations: "{{ item.locations | default(omit) }}"
+    locked: "{{ item.locked | default(false) }}"
+    operatingsystems: "{{ item.operatingsystems | default(omit) }}"
+    organizations: "{{ item.organizations | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ foreman_provisioning_templates }}"
+
+- name: Setup OS provisioning_templates
+  theforeman.foreman.operatingsystem:
+    server_url: "{{ foreman_configure_server_url }}"
+    username: "{{ foreman_configure_admin_username }}"
+    password: "{{ foreman_configure_admin_password }}"
+    validate_certs: "{{ foreman_configure_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    description: "{{ item.description | default(omit) }}"
+    major: "{{ item.major | default(omit) }}"
+    minor: "{{ item.minor | default(omit) }}"
+    family: "{{ item.family | default(omit) }}"
+    release_name: "{{ item.release_name | default(omit) }}"
+    architectures: "{{ item.architectures | default(omit) }}"
+    media: "{{ item.media | default(omit) }}"
+    ptables: "{{ item.partition_tables | default(omit) }}"
+    provisioning_templates: "{{ item.provisioning_templates | default([]) | map(attribute='name') | list | flatten }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ foreman_configure_operatingsystems }}"
+
+
+- name: Link as default provisioning_templates
+  theforeman.foreman.os_default_template:
+    server_url: "{{ foreman_configure_server_url }}"
+    username: "{{ foreman_configure_admin_username }}"
+    password: "{{ foreman_configure_admin_password }}"
+    validate_certs: "{{ foreman_configure_server_validate_certs }}"
+
+    operatingsystem: "{{ item.0.description | default(item.0.name) }}"
+    provisioning_template: "{{ item.1.name }}"
+    template_kind: "{{ item.1.kind }}"
+  loop: "{{ foreman_configure_operatingsystems | subelements('provisioning_templates', skip_missing=true) }}"
+
+- name: Setup Hostgroup
+  theforeman.foreman.hostgroup:
+    server_url: "{{ foreman_configure_server_url }}"
+    username: "{{ foreman_configure_admin_username }}"
+    password: "{{ foreman_configure_admin_password }}"
+    validate_certs: "{{ foreman_configure_server_validate_certs }}"
+
+    name: "{{ item.name }}"
+    parent: "{{ item.parent | default(omit) }}"
+    organization: "{{ item.organization | default(omit) }}"
+    organizations: "{{ item.organizations | default(omit) }}"
+    locations: "{{ item.locations | default(omit) }}"
+    operatingsystem: "{{ item.operatingsystem | default(omit) }}"
+    parameters: "{{ item.parameters | default(omit) }}"
+    ptable: "{{ item.ptable | default(omit) }}"
+    pxe_loader: "{{ item.pxe_loader | default(omit) }}"
+    root_pass: "{{ item.root_pass | default(omit) }}"
+    subnet: "{{ item.subnet | default(omit) }}"
+    architecture: "{{ item.architecture | default(omit) }}"
+    content_view: "{{ item.content_view | default(omit) }}"
+    content_source: "{{ item.content_source | default(omit) }}"
+    domain: "{{ item.domain | default(omit) }}"
+    kickstart_repository: "{{ item.kickstart_repository | default(omit) }}"
+    lifecycle_environment: "{{ item.lifecycle_environment | default(omit) }}"
+    medium: "{{ item.medium | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+    activation_keys: "{{ item.activation_keys | default(omit) }}"
+  loop: "{{ foreman_hostgroups }}"
+
+- name: Build PXE Default
+  ansible.builtin.command: |
+    hammer template build-pxe-default
+  changed_when: true
+
+
+...

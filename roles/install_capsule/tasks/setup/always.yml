@@ -1,0 +1,48 @@
+---
+- name: Install Foreman installer without running it
+  ansible.builtin.include_role:
+    name: diademiemi.foreman.install
+  vars:
+    foreman_install_skip_installer: true
+  when: inventory_hostname != foreman_install_capsule_foreman_inventory_host
+
+- name: Generate the certs for the capsule
+  become: true
+  ansible.builtin.command:
+    foreman-proxy-certs-generate --foreman-proxy-fqdn {{ ansible_fqdn }} \
+      --certs-tar /tmp/capsule-{{ ansible_fqdn }}-certs.tar
+  # args:
+  #   creates: /tmp/capsule-{{ ansible_fqdn }}-certs.tar
+  delegate_to: "{{ foreman_install_capsule_foreman_inventory_host }}"
+  register: capsule_certs_command
+  when: inventory_hostname != foreman_install_capsule_foreman_inventory_host
+
+- name: Copy the certs to the capsule
+  become: true
+  ansible.posix.synchronize:
+    src: /tmp/capsule-{{ ansible_fqdn }}-certs.tar
+    dest: /root/capsule-{{ ansible_fqdn }}-certs.tar
+  delegate_to: "{{ foreman_install_capsule_foreman_inventory_host }}"
+  when: inventory_hostname != foreman_install_capsule_foreman_inventory_host
+
+- name: Remove installer script if exists
+  ansible.builtin.file:
+    path: /tmp/capsule-{{ ansible_fqdn }}-installer.sh
+    state: absent
+
+- name: Copy installer command to a script
+  ansible.builtin.lineinfile:
+    path: /tmp/capsule-{{ ansible_fqdn }}-installer.sh
+    line: "{{ item }}"
+    create: true
+  loop: "{{ capsule_certs_command.stdout_lines[\
+    lookup('ansible.utils.index_of', capsule_certs_command.stdout_lines, 'regex', '  .*foreman-installer .*')\
+    | last | int :] }}"  # Get index of command, copy the rest
+  when: inventory_hostname != foreman_install_capsule_foreman_inventory_host
+
+- name: Run script
+  ansible.builtin.command: bash /tmp/capsule-{{ ansible_fqdn }}-installer.sh
+  when: inventory_hostname != foreman_install_capsule_foreman_inventory_host
+  changed_when: true  # No way to reliably know if it changed or not
+
+...

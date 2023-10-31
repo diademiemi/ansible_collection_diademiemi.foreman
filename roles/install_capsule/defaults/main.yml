@@ -1,0 +1,4 @@
+---
+foreman_install_capsule_foreman_inventory_host: foreman
+
+...

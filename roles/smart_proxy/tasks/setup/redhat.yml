@@ -1,0 +1,48 @@
+---
+- name: Install ISC DHCP
+  become: true
+  ansible.builtin.yum:
+    name: dhcp-server
+    state: present
+  when: foreman_smart_proxy_dhcp_install_isc
+
+# - name: Install DNS
+#   become: true
+#   ansible.builtin.yum:
+#     name: bind9.16
+#     state: present
+#   when: foreman_smart_proxy_dns_install_bind
+
+- name: Install TFTP
+  become: true
+  ansible.builtin.yum:
+    name: tftp-server
+    state: present
+  when: foreman_smart_proxy_tftp_install_tftp
+
+# - name: Start DHCP server
+#   become: true
+#   ansible.builtin.service:
+#     name: dhcpd
+#     state: started
+#     enabled: true
+#   when: foreman_smart_proxy_dhcp_install_isc
+
+# - name: Start DNS server
+#   become: true
+#   ansible.builtin.service:
+#     name: named
+#     state: started
+#     enabled: true
+#   when: foreman_smart_proxy_dns_install_bind
+
+# - name: Start TFTP server
+#   become: true
+#   ansible.builtin.service:
+#     name: tftp
+#     state: started
+#     enabled: true
+#   when: foreman_smart_proxy_tftp_install_tftp
+
+
+...

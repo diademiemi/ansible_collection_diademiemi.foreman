@@ -1,0 +1,29 @@
+---
+# I default to 3.1 since this is what Red Hat Satellite 6.11 uses
+foreman_install_release_stream: "3.1"  # Version number or "nightly"
+# I default to 4.3 since this is what Red Hat Satellite 6.11 uses
+foreman_install_katello_release_stream: "4.3"  # Version number or "nightly"
+
+foreman_install_enable_katello: "{{ _foreman_install_enable_katello }}"  # Enabled for EL
+
+foreman_install_foreman_installer_packages: "{{ _foreman_install_foreman_installer_packages }}"
+
+foreman_install_puppet_release_url: "{{ _foreman_install_puppet_release_url }}"
+
+foreman_install_rpm_release_url: "{{ _foreman_install_rpm_release_url }}"
+foreman_install_katello_rpm_release_url: "{{ _foreman_install_katello_rpm_release_url }}"
+foreman_install_foreman_apt_key_url: "{{ _foreman_install_foreman_apt_key_url }}"
+foreman_install_foreman_apt_key_dest: "{{ _foreman_install_foreman_apt_key_dest }}"
+foreman_install_foreman_apt_repo: "{{ _foreman_install_foreman_apt_repo }}"
+foreman_install_foreman_apt_plugins_repo: "{{ _foreman_install_foreman_apt_plugins_repo }}"
+foreman_install_foreman_dnf_modules: "{{ _foreman_install_foreman_dnf_modules }}"
+
+# These variables can be set collection-wide with "foreman_" prefix
+foreman_install_installer_initial_location: "{{ foreman_location | default('Default Location') }}"
+foreman_install_installer_initial_organization: "{{ foreman_organization | default('Default Organization') }}"
+foreman_install_installer_initial_admin_username: "{{ foreman_username | default('admin') }}"
+foreman_install_installer_initial_admin_password: "{{ foreman_password | default('admin') }}"
+
+foreman_install_skip_installer: false
+
+...

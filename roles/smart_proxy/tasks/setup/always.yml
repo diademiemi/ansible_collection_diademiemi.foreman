@@ -1,0 +1,95 @@
+---
+- name: Start installer for DNS server
+  become: true
+  ansible.builtin.command: |
+    foreman-installer \
+    --enable-foreman-proxy \
+    --foreman-proxy-dns={{ foreman_smart_proxy_dns | string | lower }} \
+    --foreman-proxy-dns-managed={{ foreman_smart_proxy_dns_managed | string | lower }} \
+    --foreman-proxy-dns-provider={{ foreman_smart_proxy_dns_provider }} \
+    --foreman-proxy-dns-zone="{{ foreman_smart_proxy_dns_zone }}" \
+    --foreman-proxy-dns-server="{{ foreman_smart_proxy_dns_server }}" \
+    --foreman-proxy-dns-interface="{{ foreman_smart_proxy_dns_interface }}" \
+    --foreman-proxy-keyfile={{ foreman_smart_proxy_dns_key }} \
+    --foreman-proxy-dns-reverse="{{ foreman_smart_proxy_dns_reverse }}"
+  when: foreman_smart_proxy_dns
+  changed_when: true  # No way to reliably detect if the installer changed anything
+
+- name: Link domain to DNS smart proxy  # noqa args[module]
+  theforeman.foreman.domain:
+    name: "{{ foreman_smart_proxy_domain_name }}"
+    dns_proxy: "{{ ansible_fqdn }}"
+    server_url: "{{ foreman_smart_proxy_server_url }}"
+    username: "{{ foreman_smart_proxy_admin_username }}"
+    password: "{{ foreman_smart_proxy_admin_password }}"
+    validate_certs: "{{ foreman_smart_proxy_server_validate_certs }}"
+  when: foreman_smart_proxy_dns and foreman_smart_proxy_dns_auto_link_domain
+
+- name: Start installer for DHCP server
+  become: true
+  ansible.builtin.command: |
+    foreman-installer \
+    --enable-foreman-proxy \
+    --foreman-proxy-dhcp={{ foreman_smart_proxy_dhcp | string | lower }} \
+    --foreman-proxy-dhcp-managed={{ foreman_smart_proxy_dhcp_managed | string | lower }} \
+    --foreman-proxy-dhcp-network="{{ foreman_smart_proxy_dhcp_network }}" \
+    --foreman-proxy-dhcp-gateway={{ foreman_smart_proxy_dhcp_gateway }} \
+    --foreman-proxy-dhcp-nameservers="{{ foreman_smart_proxy_dhcp_nameservers }}" \
+    --foreman-proxy-dhcp-range="{{ foreman_smart_proxy_dhcp_range }}" \
+    --foreman-proxy-dhcp-interface="{{ ansible_default_ipv4.interface }}"
+    --foreman-proxy-dhcp-omapi-port={{ foreman_smart_proxy_dhcp_omapi_port }} \
+    --foreman-proxy-dhcp-ping-free-ip={{ foreman_smart_proxy_dhcp_ping_free_ip | string | lower }} \
+    --foreman-proxy-dhcp-provider={{ foreman_smart_proxy_dhcp_provider }} \
+    --foreman-proxy-dhcp-server="{{ foreman_smart_proxy_dhcp_server }}"
+  changed_when: true  # No way to reliably detect if the installer changed anything
+  when: foreman_smart_proxy_dhcp
+
+- name: Start installer for TFTP server
+  become: true
+  ansible.builtin.command: |
+    foreman-installer \
+    --enable-foreman-proxy \
+    --foreman-proxy-tftp-managed={{ foreman_smart_proxy_tftp_managed | string | lower }} \
+    --foreman-proxy-tftp-root="{{ foreman_smart_proxy_tftp_root }}" \
+    --foreman-proxy-tftp={{ foreman_smart_proxy_tftp | string | lower }} \
+    --foreman-proxy-tftp-listen-on={{ foreman_smart_proxy_tftp_listen_on }} \
+    --foreman-proxy-tftp-servername="{{ foreman_smart_proxy_tftp_servername }}"
+  changed_when: true  # No way to reliably detect if the installer changed anything
+  when: foreman_smart_proxy_tftp
+
+- name: Remove smart proxy server
+  become: true
+  ansible.builtin.command: |
+    foreman-installer \
+    --no-enable-foreman-proxy
+  when: not foreman_smart_proxy_dns and not foreman_smart_proxy_dhcp and not foreman_smart_proxy_tftp
+  changed_when: true  # No way to reliably detect if the installer changed anything
+
+- name: Run extra opts
+  become: true
+  ansible.builtin.command: |
+    foreman-installer \
+    {% for opt in foreman_smart_proxy_extra_opts %}
+    {{ opt }} {% if not loop.last %} \ {% endif %}
+    {% endfor %}
+  changed_when: true  # No way to reliably detect if the installer changed anything
+  when: foreman_smart_proxy_extra_opts
+
+- name: Force download discovery image
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ foreman_smart_proxy_tftp_discovery_image_url }}"
+    dest: "{{ foreman_smart_proxy_tftp_root }}"
+    mode: "0644"
+  when: foreman_smart_proxy_tftp_force_download_discovery
+
+- name: Extract discovery image
+  become: true
+  ansible.builtin.unarchive:
+    src: "{{ foreman_smart_proxy_tftp_root }}/fdi-image-latest.tar"
+    dest: "{{ foreman_smart_proxy_tftp_root }}/boot/"
+    remote_src: true
+    creates: "{{ foreman_smart_proxy_tftp_root }}/boot/fdi-image"
+  when: foreman_smart_proxy_tftp_force_download_discovery
+
+...
