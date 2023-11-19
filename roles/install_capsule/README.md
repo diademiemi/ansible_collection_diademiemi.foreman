@@ -40,10 +40,10 @@ Example Playbook
 ----------------
 
 ```yaml
-- name: Use diademiemi.install_capsule role
+- name: Use diademiemi.foreman.install_capsule role
   hosts: "{{ target | default('install_capsule') }}"
   roles:
-    - role: "diademiemi.install_capsule"
+    - role: "diademiemi.foreman.install_capsule"
       tags: ['diademiemi', 'install_capsule', 'setup']    ```
 
 ```

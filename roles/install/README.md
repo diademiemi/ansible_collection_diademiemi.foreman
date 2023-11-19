@@ -59,10 +59,10 @@ Example Playbook
 ----------------
 
 ```yaml
-- name: Use diademiemi.install role
+- name: Use diademiemi.foreman.install role
   hosts: "{{ target | default('install') }}"
   roles:
-    - role: "diademiemi.install"
+    - role: "diademiemi.foreman.install"
       tags: ['diademiemi', 'install', 'setup']    ```
 
 ```

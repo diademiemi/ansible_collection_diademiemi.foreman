@@ -40,10 +40,10 @@ Example Playbook
 ----------------
 
 ```yaml
-- name: Use diademiemi.configure_katello role
+- name: Use diademiemi.foreman.configure_katello role
   hosts: "{{ target | default('configure_katello') }}"
   roles:
-    - role: "diademiemi.configure_katello"
+    - role: "diademiemi.foreman.configure_katello"
       tags: ['diademiemi', 'configure_katello', 'setup']    ```
 
 ```

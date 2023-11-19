@@ -42,10 +42,10 @@ Example Playbook
 ----------------
 
 ```yaml
-- name: Use diademiemi.smart_proxy role
+- name: Use diademiemi.foreman.smart_proxy role
   hosts: "{{ target | default('smart_proxy') }}"
   roles:
-    - role: "diademiemi.smart_proxy"
+    - role: "diademiemi.foreman.smart_proxy"
       tags: ['diademiemi', 'smart_proxy', 'setup']    ```
 
 ```

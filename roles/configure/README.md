@@ -37,10 +37,10 @@ Example Playbook
 ----------------
 
 ```yaml
-- name: Use diademiemi.configure role
+- name: Use diademiemi.foreman.configure role
   hosts: "{{ target | default('configure') }}"
   roles:
-    - role: "diademiemi.configure"
+    - role: "diademiemi.foreman.configure"
       tags: ['diademiemi', 'configure', 'setup']    ```
 
 ```
